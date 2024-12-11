@@ -1,0 +1,152 @@
+<div id="frm-first" class="modal fade show" tabindex="-1" aria-hidden="false" data-bs-keyboard="false" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="alert alert-success" role="alert">
+                    <h5 class="alert-heading">Bienvenido, <span th:text="${username}"></span></h5>
+                    <p>Felicidades por la activaci&oacute;n de su producto.</p>
+                    <p class="mb-0">Ahora, por favor, ingrese los siguientes datos para poder continuar...</p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="step1-tab" data-bs-toggle="tab" data-bs-target="#step1" type="button" role="tab" aria-controls="step1" aria-selected="true">
+                            Admin
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link disabled" id="step2-tab" data-bs-toggle="tab" data-bs-target="#step2" type="button" role="tab" aria-controls="step2" aria-selected="false" tabindex="-1">
+                            Usuario
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link disabled" id="step3-tab" data-bs-toggle="tab" data-bs-target="#step3" type="button" role="tab" aria-controls="step3" aria-selected="false" tabindex="-1">
+                            Comercio
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3" id="customTabsContent">
+                    <!-- Step 1 Content -->
+                    <div class="tab-pane fade show active" id="step1" role="tabpanel" aria-labelledby="step1-tab">
+                        <h5>Administrador</h5>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Nombre de usuario</label>
+                            <input id="username" type="text" class="form-control" placeholder="Nombre de usuario">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contrase&ntilde;a</label>
+                            <input id="password" type="password" class="form-control" placeholder="Contrase&ntilde;a">
+                        </div>
+                        <div class="mb-3">
+                            <label for="profile" class="form-label">Perfil de usuario</label>
+                            <input id="profile" type="text" readonly class="form-control" th:value="${profile}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="rep-password" class="form-label">Repetir Contrase&ntilde;a</label>
+                            <input id="rep-password" type="password" class="form-control" placeholder="Contrase&ntilde;a">
+                        </div>
+                        <button class="btn btn-primary" id="continueToStep2">Continue</button>
+                    </div>
+                    <!-- Step 2 Content -->
+                    <div class="tab-pane fade" id="step2" role="tabpanel" aria-labelledby="step2-tab">
+                        <h5>Usuario</h5>
+                        <div class="mb-3">
+                            <label for="firstname" class="form-label">Nombre</label>
+                            <input id="firstname" type="text" class="form-control" placeholder="Nombre">
+                        </div>
+                        <div class="mb-3">
+                            <label for="surname" class="form-label">Apellido</label>
+                            <input id="surname" type="password" class="form-control" placeholder="Apellido">
+                        </div>
+                        <div class="mb-3">
+                            <label for="dob" class="form-label">Fecha de nacimiento</label>
+                            <input id="dob" class="form-control" type="date">
+                        </div>
+                        <button class="btn btn-secondary" id="prevToStep1">Previous</button>
+                        <button class="btn btn-primary" id="continueToStep3">Continue</button>
+                    </div>
+                    <!-- Step 3 Content -->
+                    <div class="tab-pane fade" id="step3" role="tabpanel" aria-labelledby="step3-tab">
+                        <h5>Comercio</h5>
+                        <label for="country" class="form-label"></label>
+                        <select id="country" class="form-control">
+                            <option selected disabled value="">Pa&iacute;s</option>
+                        </select>
+                        <button class="btn btn-secondary" id="prevToStep2">Previous</button>
+                        <button class="btn btn-success">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let modal = new bootstrap.Modal(document.getElementById('frm-first'));
+        modal.show();
+
+         // Navigation buttons
+      const continueToStep2 = document.getElementById("continueToStep2");
+      const prevToStep1 = document.getElementById("prevToStep1");
+      const continueToStep3 = document.getElementById("continueToStep3");
+      const prevToStep2 = document.getElementById("prevToStep2");
+
+      // Tabs
+      const step1Tab = document.getElementById("step1-tab");
+      const step2Tab = document.getElementById("step2-tab");
+      const step3Tab = document.getElementById("step3-tab");
+
+      // Validation function
+      const validateStepInput = (inputId) => {
+        const input = document.getElementById(inputId);
+        return input && input.value.trim() !== "";
+      };
+
+      // Enable and show tab
+      const enableAndShowTab = (currentTab, nextTab) => {
+        currentTab.classList.add("disabled");
+        currentTab.setAttribute("tabindex", "-1");
+        currentTab.setAttribute("aria-disabled", "true");
+
+        nextTab.classList.remove("disabled");
+        nextTab.removeAttribute("tabindex");
+        nextTab.setAttribute("aria-disabled", "false");
+
+        const nextTabInstance = new bootstrap.Tab(nextTab);
+        nextTabInstance.show();
+      };
+
+      // Logic for "Continue" to Step 2
+      continueToStep2.addEventListener("click", () => {
+        if (validateStepInput("step1Input")) {
+          enableAndShowTab(step1Tab, step2Tab);
+        } else {
+          alert("Please complete Step 1 before continuing.");
+        }
+      });
+
+      // Logic for "Continue" to Step 3
+      continueToStep3.addEventListener("click", () => {
+        if (validateStepInput("step2Input")) {
+          enableAndShowTab(step2Tab, step3Tab);
+        } else {
+          alert("Please complete Step 2 before continuing.");
+        }
+      });
+
+      // Logic for "Previous" to Step 1
+      prevToStep1.addEventListener("click", () => {
+        step2Tab.classList.add("disabled");
+        const step1Instance = new bootstrap.Tab(step1Tab);
+        step1Instance.show();
+      });
+
+      // Logic for "Previous" to Step 2
+      prevToStep2.addEventListener("click", () => {
+        step3Tab.classList.add("disabled");
+        const step2Instance = new bootstrap.Tab(step2Tab);
+        step2Instance.show();
+      });
+    });
+</script>

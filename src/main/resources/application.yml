@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: lotto-mania
+  mvc:
+    static-path-pattern:
+      - /js/**
+      - /css/**
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  jpa:
+    generate-ddl: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate.hbm2dll.auto: create
+  web:
+    resources:
+      static-locations:
+        - classpath:/static/
+      cache:
+        cachecontrol:
+          max-age: 300
+  thymeleaf:
+    cache: false
+    prefix: 'classpath:/templates/'
+    suffix: '.html'
+
+user:
+  session:
+    name: LP_SID
+    duration: 300
+
+app:
+  rules:
+    files: >
+      rules/betting.drl

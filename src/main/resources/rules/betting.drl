@@ -1,0 +1,133 @@
+global Integer maxBetsPerTransaction;
+global ar.com.kaijusoftware.lotto_mania.repositories.GamePlayRepository gamePlayRepository;
+global ar.com.kaijusoftware.lotto_mania.models.Transaction transaction;
+global org.slf4j.Logger logger;
+
+import ar.com.kaijusoftware.lotto_mania.controllers.dto.GameBetInfo;
+import ar.com.kaijusoftware.lotto_mania.models.GamePlay;
+import ar.com.kaijusoftware.lotto_mania.models.GameBet;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
+import java.lang.IllegalArgumentException;
+
+
+dialect "java"
+
+rule "Validate bet array is not empty"
+    ruleflow-group "bet-validation"
+    salience 9000
+when
+    List(isEmpty()) from collect (GameBetInfo())
+then
+    logger.error("Bet array is empty, cannot process.");
+    IllegalArgumentException ex = new IllegalArgumentException("EMPTY BET ARRAY");
+    insert (ex);
+
+    drools.halt();
+end
+
+rule "Validate bet array size"
+    ruleflow-group "bet-validation"
+when
+    $bets: List(size() > maxBetsPerTransaction) from collect (GameBetInfo())
+then
+    logger.error("Bet array size is greater to {}: {}", maxBetsPerTransaction, $bets.size());
+
+    IllegalArgumentException ex = new IllegalArgumentException(
+            String.format("BET ARRAY SIZE (%d) IS GREATER THAN MAX ALLOWED: %d", $bets.size(), maxBetsPerTransaction));
+    insert (ex);
+
+    drools.halt();
+end
+
+rule "Convert GameBetInfo into GameBet model"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBetInfo()
+then
+    logger.info("Converting GameBetInfo into GameBet model: {}", $bet);
+    GamePlay gp = GamePlay.builder()
+        .pk($bet.getGamePlayId())
+        .build();
+
+    GameBet gb = GameBet.builder()
+        .play($bet.getPlay())
+        .gamePlay(gp)
+        .amount($bet.getAmount())
+        .transaction(transaction)
+        .build();
+
+    drools.delete($bet);
+
+    insert (gb);
+end
+
+rule "Clean bets with gamePlayId equals to null"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBet($gp: gamePlay)
+then
+    logger.info("Deleting GameBet with GamePlayId equals to null: {}", $bet);
+    if ($gp == null || $gp.getPk() == null) {
+        drools.delete($bet);
+        IllegalArgumentException ex = new IllegalArgumentException("MISSING GAMEPLAY_ID IN BET");
+        insert (ex);
+    }
+end
+
+rule "Check if gamePlayId refers to a valid GamePlay object"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBet($gpId: gamePlay.pk)
+then
+    logger.info("Checking if gamePlayId refers to a valid GamePlay object: {}", $gpId);
+    GamePlay gp = gamePlayRepository.findById($gpId).orElse(null);
+    modify($bet){
+        setGamePlay(gp)
+    }
+    if (gp == null) {
+        IllegalArgumentException ex = new IllegalArgumentException("UNKNOWN GAMEPLAY_ID " + $gpId);
+        insert (ex);
+    }
+end
+
+rule "Clean bets with no valid GamePlay"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBet(gamePlay == null)
+then
+    logger.info("Deleting bet with no valid GamePlay from rules pool: {}", $bet);
+    drools.delete($bet);
+end
+
+rule "Check execution time for GamePlay"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBet($gp: gamePlay, gamePlay != null)
+then
+    logger.info("Checking execution time of gameplay: {}", $gp);
+
+    if (LocalDateTime.now().isAfter($gp.getExecuteAt())) {
+        drools.delete($bet);
+
+        IllegalArgumentException ex = new IllegalArgumentException("GAMEPLAY " + $gp.getPk() +  "HAS BEEN EXECUTED");
+        insert (ex);
+    }
+end
+
+
+rule "Check expiration time for GamePlay"
+    ruleflow-group "bet-validation"
+when
+    $bet: GameBet($gp: gamePlay, gamePlay != null)
+then
+    logger.info("Checking expiration time of gameplay: {}", $gp);
+
+    if (LocalDate.now().isAfter($gp.getExpiresAt())) {
+        drools.delete($bet);
+
+        IllegalArgumentException ex = new IllegalArgumentException("GAMEPLAY " + $gp.getPk() +  "HAS EXPIRED");
+        insert (ex);
+    }
+end
